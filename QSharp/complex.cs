@@ -36,6 +36,14 @@ namespace QSharp {
             set {}
         }
 
+        public static Complex Pow(Complex a, int b) {
+            Complex answer = Complex.ONE;
+            for (int i = 0; i < b; i++) {
+                answer *= a;
+            }
+            return answer;
+        }
+
         public static Complex operator +(Complex a, Complex b) {
             return new Complex(a.r+b.r, a.i+b.i);
         }

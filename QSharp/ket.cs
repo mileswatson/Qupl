@@ -1,8 +1,25 @@
 using System;
+using System.Collections;
 
 namespace QSharp {
     
     class Ket : Operator {
+
+        public Ket SwapBits(int a, int b) {
+            Ket k = new Ket(R);
+            for (int r = 0; r < R; r++) {
+                BitArray bits = new BitArray(new int[]{r});
+                bool buffer = bits[a];
+                bits[a] = bits[b];
+                bits[b] = buffer;
+                int[] array = new int[1];
+                bits.CopyTo(array, 0);
+                int paired = array[0];
+                k[r, 0] = this[paired, 0];
+                k[paired, 0] = this[r, 0];
+            }
+            return k;
+        }
 
         public Bra Bra {
             get {
@@ -131,12 +148,12 @@ namespace QSharp {
         public static Ket FromBits(params int[] x) {
             Ket k = (x[0] == 0) ? new Ket(false) : new Ket(true);
             for (int i = 1; i < x.Length; i++) {
-                k = k * (x[i] == 0 ? new Ket(false) : new Ket(true));
+                k = k + (x[i] == 0 ? new Ket(false) : new Ket(true));
             }
             return k;
         }
 
-        public static Ket operator *(Ket a, Ket b) {
+        public static Ket operator +(Ket a, Ket b) {
             Ket c = new Ket(a.order * b.order);
             for (int i = 0; i < a.order; i++) {
                 for (int j = 0; j < b.order; j++) {
@@ -158,7 +175,7 @@ namespace QSharp {
             return ket;
         }
 
-        public static Ket operator +(Ket a, Ket b) {
+        public static Ket operator ^(Ket a, Ket b) {
             Ket c = new Ket(a.order);
             for (int i = 0; i < a.order; i++) {
                 c[i, 0] = a[i, 0] + b[i, 0];

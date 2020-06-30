@@ -143,6 +143,20 @@ namespace QSharp {
             values = new Complex[_r, _c];
         }
 
+        public static Operator FOURIER(int bits) {
+            int n = 1 << bits;
+            var op = new Operator(n, n);
+            double angle = 2*Math.PI / (double)n;
+            Complex w = new Complex(Math.Cos(angle), Math.Sin(angle));
+            for (int row = 0; row < op.R; row++)
+            {
+                for (int column = 0; column < op.C; column++) {
+                    op[row, column] = Complex.Pow(w, row*column) / Math.Sqrt((double)n);
+                }
+            }
+            return op;
+        }
+
         public static Operator HADAMARD {
             get {
                 return new Operator(
