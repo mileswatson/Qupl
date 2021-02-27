@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>fsharp_test</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Quantum/Complex.fs" />
+    <Compile Include="Quantum/Matrix.fs" />
+    <Compile Include="Quantum/Quantum.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+</Project>

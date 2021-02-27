@@ -1,4 +1,4 @@
-namespace QSharp {
+namespace Quantum {
     
     class Bra : Operator {
 
@@ -78,7 +78,6 @@ namespace QSharp {
                 }
                 return k; 
             }
-            
         }
 
     }

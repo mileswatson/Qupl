@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 
-namespace QSharp {
+namespace Quantum {
     
     class Ket : Operator {
 

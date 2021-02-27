@@ -1,5 +1,5 @@
 using System;
-using QSharp;
+using Quantum;
 
 class MainClass {
     public static void Main (string[] args) {
@@ -8,7 +8,7 @@ class MainClass {
         // uncomment one of these
 
         // CONSTANT - should give 11 at the end
-        //blackbox = Operator.IDENTITY + Operator.IDENTITY;
+        blackbox = Operator.IDENTITY + Operator.IDENTITY;
         //blackbox = Operator.IDENTITY + Operator.NOT;
 
         // VARIABLE - should give 01 at the end
@@ -33,8 +33,6 @@ class MainClass {
         Console.WriteLine(result);
     
         Console.WriteLine(string.Join("", result.Collapse()));
-
-
     }
 
 }
