@@ -1,5 +1,3 @@
-
-
 namespace QSharp {
     
     class Bra : Operator {
