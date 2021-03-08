@@ -1,24 +1,27 @@
 namespace Quantum
 
-type State = Matrix
-
 module State =
 
-    let zero = 
-        array2D [[Complex.one];
-                 [Complex.zero]]
+    type _State = State of Matrix
 
-    let one = 
-        array2D [[Complex.zero];
-                 [Complex.one]]
+    let fromMatrix (m: Matrix) =
+        if (Matrix.columns m) = 5 then Some (State m)
+        else None
+
+    let toMatrix (State s) = s
+    
+    let entangle states =
+        states
+        |> Seq.map toMatrix
+        |> Matrix.tensorAll
+        |> State
 
     let private measuremap divisor r x =
         if (r / divisor) % 2 = 0 then
             Complex.probability x
         else 0.
 
-
-    let measure bit (s : State) =
+    let measure bit (State s) =
         let divisor = (Matrix.rows s) >>> (bit + 1)
         let mutable total = double 0.
         s
@@ -27,64 +30,122 @@ module State =
         Matrix.columns s
         |> double
         |> (/) total
+    
+    let debug = 
+        pown 2
+        >> Matrix.identity
+        >> State
 
+    let zero = 
+        array2D [[Complex.one];
+                 [Complex.zero]]
+        |> State
 
-type Operator = Matrix
+    let one = 
+        array2D [[Complex.zero];
+                 [Complex.one]]
+        |> State
 
 module Operator =
+
+    type _Operator = Operator of Matrix
+
+    let fromMatrix m =
+        let (rows, columns) = (Matrix.rows m, Matrix.columns m)
+        let square = (rows = columns)
+        let pow2 = rows &&& (rows-1)
+        if square && pow2 = 0 then
+            Some (Operator m)
+        else None
     
-    let fromSeq2D matrix : Operator =
-        array2D matrix
-
-    let fromFunction qbits funct: Operator =
-        pown 2 qbits
-        |> Matrix.identity
-        |> funct
-
-module Core =
-
-    let debugstate qbits : State =
-        pown 2 qbits
-        |> Matrix.identity
-
-    let combine (operators : seq<Operator>) : Operator =
-        if Seq.length operators = 1 then Seq.head operators
-        else Operator.fromSeq2D [[(1., 0.)]]
-            |> Seq.fold Matrix.tensor <| operators
+    let toMatrix (Operator o) = o
     
-    let apply (operators: seq<Operator>) : State -> State =
+    let private fromSeq2D =
+        array2D >> Operator
+
+    let fromFunction bits f =
+        let arrSize = (1<<<(bits*2))
+        let arr = Array2D.create arrSize arrSize Complex.zero
+        for i in 0..(arrSize-1) do
+            arr.[f i, i] <- Complex.one
+        arr
+    
+    let combine operators =
+        Seq.map toMatrix operators
+        |> Matrix.tensorAll
+        |> Operator
+
+    let apply operators (State.State s) =
         combine operators
-        |> Matrix.multiply
-    
-    let chain (second: seq<Operator>) (first: Operator) : Operator =
+        |> toMatrix
+        |> Matrix.multiply <| s
+        |> State.State
+
+    let chain second (Operator first) =
         combine second
+        |> toMatrix
         |> Matrix.multiply <| first
+        |> Operator
     
-    let measure = State.measure
-    
-    let tostring = Matrix.tostring
+    let private sqrt2 : double = sqrt 2.
 
-    let sqrt2 : double = sqrt 2.
-
-    let sqrt2' : double = 1. / sqrt2
+    let private sqrt2' : double = 1. / sqrt2
 
     let IDENTITY =
-        Operator.fromSeq2D
+        fromSeq2D
             [[ Complex.one; Complex.zero ];
              [ Complex.zero; Complex.one ]]
-
+    
+    let HADAMARD =
+        fromSeq2D
+            [[ (sqrt2', 0.); (sqrt2', 0.) ];
+             [ (sqrt2', 0.); (-sqrt2', 0.) ]]
+    
     let NOT =
-        Operator.fromSeq2D
+        fromSeq2D
             [[ Complex.zero; Complex.one ];
              [ Complex.one; Complex.zero ]]
-
-    let HADAMARD =
-        Operator.fromSeq2D [[ (sqrt2', 0.); (sqrt2', 0.) ];
-                         [ (sqrt2', 0.); (-sqrt2', 0.) ]]
     
     let CNOT =
-        Operator.fromSeq2D
+        fromSeq2D
             [[ Complex.one; Complex.zero; Complex.zero; Complex.zero ];
              [ Complex.zero; Complex.one; Complex.zero; Complex.zero ];
              [ Complex.zero; Complex.zero; Complex.zero; Complex.one ];
-             [ Complex.zero; Complex.zero; Complex.one; Complex.zero ];] 
+             [ Complex.zero; Complex.zero; Complex.one; Complex.zero ];]
+    
+    let ADD bits =
+        fromFunction (bits*2) (fun x ->
+            let max = 1 <<< bits
+            let mask = max - 1
+            let num1 = x &&& mask
+            let num2 = x >>> bits
+            ((num1 + num2) % max) + (num2<<<bits))
+
+module Core =
+
+    let zero = State.zero
+
+    let one = State.one
+
+    let apply = Operator.apply
+
+    let combine = Operator.combine
+
+    let entangle = State.entangle 
+
+    let chain = Operator.chain
+    
+    let measure = State.measure
+    
+    let tostring =
+        State.toMatrix >> Matrix.tostring
+
+    let IDENTITY = Operator.IDENTITY
+
+    let HADAMARD = Operator.HADAMARD
+
+    let NOT = Operator.NOT
+
+    let CNOT = Operator.CNOT
+
+    let ADD = Operator.ADD

@@ -13,7 +13,7 @@ type DeutschResult =
     | Variable of double // probability of variable
 
 let deutsch blackbox =
-    combine [State.zero; State.one]
+    entangle [State.zero; State.one]
     |> apply [HADAMARD; HADAMARD]
     |> apply [blackbox]
     |> apply [HADAMARD; IDENTITY]
@@ -24,6 +24,8 @@ let deutsch blackbox =
 
 [<EntryPoint>]
 let main argv =
-    deutsch v1
+    entangle [zero; zero]
+    |> apply [HADAMARD; HADAMARD]
+    |> tostring
     |> printf "%O"
     0 // return an integer exit code

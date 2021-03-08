@@ -25,13 +25,17 @@ module Matrix =
     let tensor (a: Matrix) (b: Matrix) : Matrix =
         fun r c -> Complex.multiply a.[r / rows b, c / columns b] b.[r % rows b, c % columns b]
         |> Array2D.init ((rows a) * (rows b)) ((columns a) * (columns b))
-
-    let rowtostring row =
-        row
+    
+    let tensorAll matrices : Matrix = 
+        if Seq.length matrices = 1 then Seq.head matrices
+        else [[(1., 0.)]]
+            |> array2D
+            |> Seq.fold tensor <| matrices
 
     let tostring matrix =
-        Array.init (rows matrix) <| fun r ->
-            seq { for c in 0 .. columns matrix - 1 -> matrix.[r, c] }
-            |> Seq.map Complex.tostring
-            |> String.concat ", "
+        Array.init (rows matrix)
+            <| fun r ->
+                seq { for c in 0 .. columns matrix - 1 -> matrix.[r, c] }
+                |> Seq.map Complex.tostring
+                |> String.concat ", "
         |> String.concat "\n"
