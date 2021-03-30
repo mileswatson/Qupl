@@ -13,7 +13,7 @@
 <p align="center">
 
   <h3 align="center">
-    <a href="https://github.com/mileswatson/qupl">
+    <a href="#----------------">
       <img src="img/logo.png" alt="Logo" width="400" height="166">
     </a>
   </h3>
