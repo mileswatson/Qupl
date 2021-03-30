@@ -1,12 +1,3 @@
-<h1 align="center">
-  QUPL
-</h1>
-
-<h3 align="center">
-  A simple, interpreted <b>Qu</b>antum <b>P</b>rogramming <b>L</b>anguage.
-</h3>
-
-<h1></h1><br/>
 
 <p align="center">
   <a href="https://github.com/mileswatson/qupl/blob/master/LICENSE"><img alt="GitHub license" src="https://img.shields.io/github/license/mileswatson/qupl?color=blue"></a>
@@ -17,17 +8,31 @@
   <img alt="Linux" src="https://img.shields.io/static/v1?label=&message=linux&color=FCC624&logo=Linux&logoColor=black">
 </p>
 
-<h3 align="center">
-  <a href="https://github.com/mileswatson/qupl/tree/master/src">Source</a>
-  <span> · </span>
-  <a href="https://github.com/mileswatson/qupl/wiki">Docs</a>
-  <span> · </span>
-  <a href="https://github.com/mileswatson/qupl/discussions/">Feature Requests</a>
-  <span> · </span>
-  <a href="https://github.com/mileswatson/qupl/issues">Bug Reports</a>
-  <span> · </span>
-  <a href="https://github.com/mileswatson/qupl/discussions/">Support</a>
-</h3>
+<br>
+
+<p align="center">
+
+  <a href="https://github.com/mileswatson/qupl">
+    <img src="img/logo.png" alt="Logo" width="400" height="166">
+  </a>
+
+  <h2 align="center">Quantum computing made simple.</h2>
+
+  <br>
+
+  <p align="center">
+    A simple, interpreted <b>Qu</b>antum <b>P</b>rogramming <b>L</b>anguage.
+    <br />
+    <a href="https://github.com/mileswatson/qupl"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/mileswatson/qupl">View Demo</a>
+    ·
+    <a href="https://github.com/mileswatson/qupl/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/mileswatson/qupl/issues">Request Feature</a>
+  </p>
+</p>
 
 <h1></h1>
 
