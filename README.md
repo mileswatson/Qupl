@@ -12,9 +12,11 @@
 
 <p align="center">
 
-  <a href="https://github.com/mileswatson/qupl">
-    <img src="img/logo.png" alt="Logo" width="400" height="166">
-  </a>
+  <h3 align="center">
+    <a href="https://github.com/mileswatson/qupl">
+      <img src="img/logo.png" alt="Logo" width="400" height="166">
+    </a>
+  </h3>
 
   <h3 align="center">Quantum computing made simple.</h3>
 
