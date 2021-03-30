@@ -38,3 +38,27 @@
 
 <h1></h1>
 
+### Sample Program (Deutsch's Algorithm)
+
+Deutsch's algorithm can be used to tell in a single pass whether a function is constant or balanced.
+
+```
+let blackbox =
+    H H     // here is a comment
+
+funq deutsch(G: 2) =
+    0 1
+    H H
+
+    log
+    G
+    log
+
+    H H
+
+
+let main =
+    deutsch(blackbox)
+    out
+
+```
