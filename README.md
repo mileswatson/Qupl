@@ -16,7 +16,7 @@
     <img src="img/logo.png" alt="Logo" width="400" height="166">
   </a>
 
-  <h2 align="center">Quantum computing made simple.</h2>
+  <h3 align="center">Quantum computing made simple.</h3>
 
   <br>
 
