@@ -24,4 +24,24 @@ module Lexer =
 
     let removeCarriageReturns (code: string) = code.Replace("\r", "")
 
-    let lex = removeCarriageReturns
+    let removeComments (code: string) =
+        code.Split("\n")
+        |> Seq.map (fun line -> line.Split("//").[0])
+        |> String.concat "\n"
+
+    let characterise (code: string) =
+        code.Split("\n")
+        |> Seq.mapi
+            (fun lineNum line ->
+                if String.length line = 0 then
+                    Seq.empty
+                else
+                    line + "\n"
+                    |> Seq.mapi (fun charNum char -> Parsing.Char(char, (lineNum + 1, charNum + 1))))
+        |> Seq.concat
+
+    let lex (input: string) =
+        input
+        |> removeCarriageReturns
+        |> removeComments
+        |> characterise

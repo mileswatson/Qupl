@@ -8,6 +8,6 @@ let main argv =
     else
         System.IO.File.ReadAllText argv.[0]
         |> lex
-        |> printf "%s"
+        |> Seq.iter (fun x -> printfn "%O" x)
 
         0
