@@ -33,7 +33,8 @@ module Lexer =
         code.Split("\n")
         |> Seq.mapi
             (fun lineNum line ->
-                if String.length line = 0 then
+                if String.length line = 0
+                   || System.String.IsNullOrWhiteSpace line then
                     Seq.empty
                 else
                     line + "\n"
