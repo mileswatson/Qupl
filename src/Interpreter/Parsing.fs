@@ -2,16 +2,20 @@ namespace Interpreter
 
 module Parsing =
 
-    type Result<'a, 'b> =
-        | Success of 'a * seq<'b>
-        | Failure of string
+    type Char = char * (int * int)
 
-    type Parser<'a, 'b> = Parser of (seq<'b> -> Result<'a, 'b>)
+    type Failure = (int * int) * string
+
+    type Result<'a> =
+        | Success of 'a * seq<Char>
+        | Failure of Failure
+
+    type Parser<'a> = Parser of (seq<Char> -> Result<'a>)
 
     let run (Parser p) = p
 
     /// andThen
-    let (.>>.) p1 p2 =
+    let (.>>.) (p1: Parser<seq<'a>>) (p2: Parser<seq<'a>>) =
         let innerFn input =
             match run p1 input with
             | Failure f -> Failure f
@@ -34,32 +38,38 @@ module Parsing =
     /// map
     let (|>>) f p1 =
         let innerFn input =
-            match p1 input with
+            match run p1 input with
             | Success (a, remaining) -> Success(f a, remaining)
             | Failure f -> Failure f
 
         Parser innerFn
 
     let matchOne a =
-        let innerFn (input: seq<'b>) =
+        let innerFn input =
             match Seq.tryHead input with
-            | None -> Failure "Unexpected termination!"
-            | Some c ->
-                if a = c then
+            | None -> Failure((0, 0), "Unexpected end of file.")
+            | Some (c: Char) ->
+                if fst c = a then
                     Success(c, Seq.tail input)
                 else
-                    Failure "Character did not match!"
+                    Failure(snd c, sprintf "Expected to find '%c', but found '%c'." a (fst c))
 
         Parser innerFn
 
     let matchAny aSeq =
-        let innerFn (input: seq<'b>) =
+        let innerFn input =
             match Seq.tryHead input with
-            | None -> Failure "Unexpected termination!"
-            | Some c ->
-                if Seq.contains c aSeq then
+            | None -> Failure((0, 0), "Unexpected end of file!")
+            | Some (c: Char) ->
+                if Seq.contains (fst c) aSeq then
                     Success(c, Seq.tail input)
                 else
-                    Failure "Unexpected character!"
+                    Failure(snd c, sprintf "Unexpected character '%c'." (fst c))
 
         Parser innerFn
+
+    let matchString str =
+        str
+        |> Seq.map matchOne
+        |> Seq.map ((|>>) Seq.singleton)
+        |> Seq.reduce ((.>>.))
