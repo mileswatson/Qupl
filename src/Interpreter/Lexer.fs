@@ -22,13 +22,6 @@ type Token =
 
 module Lexer =
 
-    let splitLines (code: string) =
-        code.Replace("\r", "").Split '\n' |> seq
+    let removeCarriageReturns (code: string) = code.Replace("\r", "")
 
-    let removeBlankLines =
-        Seq.where
-            (fun (x: string) ->
-                (x.Length = 0 || System.String.IsNullOrWhiteSpace x)
-                |> not)
-
-    let lex = splitLines >> removeBlankLines
+    let lex = removeCarriageReturns
