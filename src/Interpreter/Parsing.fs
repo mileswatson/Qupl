@@ -44,7 +44,25 @@ module Parsing =
 
         Parser innerFn
 
-    let matchOne a =
+    let maybe parser =
+        let innerFn input =
+            match run parser input with
+            | Success (a, remaining) -> Success(Seq.singleton a, remaining)
+            | Failure f -> Success(Seq.empty, input)
+
+        Parser innerFn
+
+    let maybeMany parser =
+        let rec innerFn matched input =
+            match run parser input with
+            | Failure f -> Success(matched, input)
+            | Success (a, remaining) -> innerFn (Seq.append a matched) remaining
+
+        Parser(innerFn Seq.empty)
+
+    let many parser = parser .>>. (maybeMany parser)
+
+    let pChar a =
         let innerFn input =
             match Seq.tryHead input with
             | None -> Failure((0, 0), "Unexpected end of file.")
@@ -56,7 +74,7 @@ module Parsing =
 
         Parser innerFn
 
-    let matchAny aSeq =
+    let pAnyChar aSeq =
         let innerFn input =
             match Seq.tryHead input with
             | None -> Failure((0, 0), "Unexpected end of file!")
@@ -68,8 +86,8 @@ module Parsing =
 
         Parser innerFn
 
-    let matchString str =
+    let pString str =
         str
-        |> Seq.map matchOne
+        |> Seq.map pChar
         |> Seq.map ((|>>) Seq.singleton)
         |> Seq.reduce ((.>>.))
