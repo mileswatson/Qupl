@@ -4,25 +4,51 @@ module Parsing =
 
     type Char = char * (int * int)
 
-    type Failure = (int * int) * string
+    type Position = (int * int)
+
+    type Expected = string
+
+    type Found = string
 
     type Result<'a> =
-        | Success of 'a * seq<Char>
-        | Failure of Failure
+        | Success of 'a * Char list
+        | Failure of Position * Expected * Found
 
-    type Parser<'a> = Parser of (seq<Char> -> Result<'a>)
+    type Parser<'a> = Parser of (Char list -> Result<'a>)
 
     let run (Parser p) = p
 
     /// andThen
-    let (.>>.) (p1: Parser<seq<'a>>) (p2: Parser<seq<'a>>) =
+    let (.>>.) p1 p2 =
         let innerFn input =
             match run p1 input with
-            | Failure f -> Failure f
+            | Failure (p, e, f) -> Failure(p, e, f)
             | Success (a1, remaining) ->
                 match run p2 remaining with
-                | Failure f -> Failure f
-                | Success (a2, remaining) -> Success(Seq.append a1 a2, remaining)
+                | Failure (p, e, f) -> Failure(p, e, f)
+                | Success (a2, remaining) -> Success((a1, a2), remaining)
+
+        Parser innerFn
+
+    let (>>.) p1 p2 =
+        let innerFn input =
+            match run p1 input with
+            | Failure (p, e, f) -> Failure(p, e, f)
+            | Success (_, remaining) ->
+                match run p2 remaining with
+                | Failure (p, e, f) -> Failure(p, e, f)
+                | Success (a2, remaining) -> Success(a2, remaining)
+
+        Parser innerFn
+
+    let (.>>) p1 p2 =
+        let innerFn input =
+            match run p1 input with
+            | Failure (p, e, f) -> Failure(p, e, f)
+            | Success (a1, remaining) ->
+                match run p2 remaining with
+                | Failure (p, e, f) -> Failure(p, e, f)
+                | Success (_, remaining) -> Success(a1, remaining)
 
         Parser innerFn
 
@@ -36,58 +62,75 @@ module Parsing =
         Parser innerFn
 
     /// map
-    let (|>>) f p1 =
+    let map f p1 =
         let innerFn input =
             match run p1 input with
             | Success (a, remaining) -> Success(f a, remaining)
-            | Failure f -> Failure f
+            | Failure (p, e, f) -> Failure(p, e, f)
 
         Parser innerFn
 
+    let (|>>) p1 f = map f p1
+
+    /// Replaces the expected value of a failure
+    let (<?>) parser label =
+        let innerFn input =
+            match run parser input with
+            | Success (a, remaining) -> Success(a, remaining)
+            | Failure (position, _, f) -> Failure(position, label, f)
+
+        Parser innerFn
+
+    /// Matches Some or None
     let maybe parser =
         let innerFn input =
             match run parser input with
-            | Success (a, remaining) -> Success(Seq.singleton a, remaining)
-            | Failure f -> Success(Seq.empty, input)
+            | Success (a, remaining) -> Success(Some a, remaining)
+            | Failure _ -> Success(None, input)
 
         Parser innerFn
 
-    let maybeMany parser =
+    /// Matches zero or more
+    let many parser =
         let rec innerFn matched input =
             match run parser input with
-            | Failure f -> Success(matched, input)
-            | Success (a, remaining) -> innerFn (Seq.append a matched) remaining
+            | Failure _ -> Success(List.rev matched, input)
+            | Success (a, remaining) -> innerFn (a :: matched) remaining
 
-        Parser(innerFn Seq.empty)
+        Parser(innerFn [])
 
-    let many parser = parser .>>. (maybeMany parser)
+    /// Matches one or more
+    let many1 parser = parser .>>. (many parser)
 
-    let pChar a =
+    /// Matches one
+    let pchar a =
         let innerFn input =
-            match Seq.tryHead input with
-            | None -> Failure((0, 0), "Unexpected end of file.")
-            | Some (c: Char) ->
-                if fst c = a then
-                    Success(c, Seq.tail input)
+            match input with
+            | [] -> Failure((0, 0), string a, "EOF")
+            | (head: Char) :: remaining ->
+                if fst head = a then
+                    Success(head, remaining)
                 else
-                    Failure(snd c, sprintf "Expected to find '%c', but found '%c'." a (fst c))
+                    Failure(snd head, string a, string (fst head))
 
         Parser innerFn
 
-    let pAnyChar aSeq =
+    /// Matches any of the parsers
+    let any aSeq =
         let innerFn input =
-            match Seq.tryHead input with
-            | None -> Failure((0, 0), "Unexpected end of file!")
-            | Some (c: Char) ->
-                if Seq.contains (fst c) aSeq then
-                    Success(c, Seq.tail input)
+            match input with
+            | [] -> Failure((0, 0), sprintf "%A" aSeq, "EOF")
+            | (head: Char) :: remaining ->
+                if Seq.contains (fst head) aSeq then
+                    Success(fst head, remaining)
                 else
-                    Failure(snd c, sprintf "Unexpected character '%c'." (fst c))
+                    Failure((0, 0), sprintf "%A" aSeq, string (fst head))
 
         Parser innerFn
 
-    let pString str =
+    /// Matches a string
+    let sequence str =
         str
-        |> Seq.map pChar
-        |> Seq.map ((|>>) Seq.singleton)
-        |> Seq.reduce ((.>>.))
+        |> Seq.map pchar
+        |> Seq.map (map List.singleton)
+        |> Seq.reduce (fun x y -> (x .>>. y) |>> ((<||) List.append))
