@@ -35,9 +35,17 @@ module Lexer =
                     |> List.mapi (fun charNum char -> Char(char, (lineNum + 1, charNum + 1))))
         |> List.concat
 
-    let pWhitespace = pAnyChar " \n\t"
+    let whitespace = many1 (pAnyChar " 	") <?> "whitespace"
 
-    let tokenise = pString "funq"
+    /// Matches a new line, even if surrounded by whitespace
+    let newline =
+        maybe whitespace >>. (pChar '\n')
+        .>> maybe whitespace
+        <?> "a new line"
+
+    let tokenise =
+        pString "never gonna give you up" .>> newline
+        >>. pString "never gonna let you down"
 
     let lex (input: string) =
         input

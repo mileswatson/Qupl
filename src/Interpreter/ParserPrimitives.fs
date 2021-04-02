@@ -29,7 +29,7 @@ module ParserPrimitives =
                 sprintf "Expected %s but found %s" e f |> Error
             else
                 let msg =
-                    sprintf "(%i, %i) Expected %s but found %s" (fst p) (snd p) e f
+                    sprintf "(%i, %i) Expected %s but found %s instead." (fst p) (snd p) e f
 
                 let line =
                     cs
@@ -146,7 +146,14 @@ module ParserPrimitives =
                 if fst head = a then
                     Success(head, remaining)
                 else
-                    Failure(snd head, string a, sprintf "'%c'" (fst head))
+                    let found =
+                        match fst head with
+                        | '\n' -> "'\\n' (a new line)"
+                        | '\t' -> "'\\t' (a tab)"
+                        | ' ' -> "' ' (a space)"
+                        | c -> sprintf "'%c'" c
+
+                    Failure(snd head, string a, found)
 
         Parser innerFn
 
@@ -156,4 +163,4 @@ module ParserPrimitives =
     /// Matches a string
     let pString (str: string) =
         str |> Seq.map pChar |> sequence |>> string
-        <?> str
+        <?> sprintf "'%s'" str
