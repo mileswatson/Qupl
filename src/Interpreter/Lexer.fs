@@ -22,17 +22,20 @@ module Lexer =
 
     let characterise (code: string) =
         code.Split("\n")
-        |> Seq.mapi
+        |> Array.toList
+        |> List.mapi
             (fun lineNum line ->
                 if String.length line = 0
                    || System.String.IsNullOrWhiteSpace line then
-                    Seq.empty
+                    List.empty
                 else
-                    line + "\n"
-                    |> Seq.mapi (fun charNum char -> Parsing.Char(char, (lineNum + 1, charNum + 1))))
-        |> Seq.concat
+                    (Seq.toList line) @ [ '\n' ]
+                    |> List.mapi (fun charNum char -> Parsing.Char(char, (lineNum + 1, charNum + 1))))
+        |> List.concat
 
-    let pWhitespace = Parsing.pAnyChar " \t\n"
+    let pWhitespace =
+        Parsing.any [ Parsing.pChar '\n'
+                      Parsing.pChar '\t' ]
 
     let tokenise = Parsing.pString "funq"
 

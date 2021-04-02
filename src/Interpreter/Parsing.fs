@@ -81,31 +81,14 @@ module Parsing =
 
         Parser innerFn
 
-    /// Matches one character exactly
-    let pchar a =
-        let innerFn input =
-            match input with
-            | [] -> Failure((0, 0), string a, "EOF")
-            | (head: Char) :: remaining ->
-                if fst head = a then
-                    Success(head, remaining)
-                else
-                    Failure(snd head, string a, string (fst head))
-
-        Parser innerFn
+    /// Matches any parser
+    let any parsers = parsers |> Seq.reduce (<|>)
 
     /// Matches a list of items in sequence
     let sequence parsers =
         parsers
         |> Seq.map (map List.singleton)
         |> Seq.reduce (fun x y -> (x .>>. y) |>> ((<||) List.append))
-
-    /// Matches a string
-    let pstring (str: string) =
-        str |> Seq.map pchar |> sequence |>> string
-
-    /// Matches any parser
-    let any parsers = parsers |> Seq.reduce (<|>)
 
     /// Matches Some or None
     let maybe parser =
@@ -127,3 +110,23 @@ module Parsing =
 
     /// Matches one or more
     let many1 parser = parser .>>. (many parser)
+
+    /// Matches one character exactly
+    let pChar a =
+        let innerFn input =
+            match input with
+            | [] -> Failure((0, 0), string a, "EOF")
+            | (head: Char) :: remaining ->
+                if fst head = a then
+                    Success(head, remaining)
+                else
+                    Failure(snd head, string a, string (fst head))
+
+        Parser innerFn
+
+    /// Matches any char
+    let pAnyChar str = str |> Seq.map pChar |> any
+
+    /// Matches a string
+    let pString (str: string) =
+        str |> Seq.map pChar |> sequence |>> string
