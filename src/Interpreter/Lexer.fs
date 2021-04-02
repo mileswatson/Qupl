@@ -44,4 +44,4 @@ module Lexer =
         |> removeCarriageReturns
         |> removeComments
         |> characterise
-        |> Parsing.run tokenise
+        |> Parsing.runFmt tokenise

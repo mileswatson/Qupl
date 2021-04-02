@@ -8,6 +8,8 @@ let main argv =
     else
         System.IO.File.ReadAllText argv.[0]
         |> lex
-        |> printfn "%O"
+        |> function
+        | Ok _ -> printfn "Success!"
+        | Error msg -> printfn "%s" msg
 
         0
