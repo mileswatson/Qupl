@@ -16,8 +16,11 @@ module ParserPrimitives =
 
     type Parser<'a> = Parser of (Char list -> Result<'a>)
 
+    /// Applies a parser to a given Char list.
     let run (Parser p) = p
 
+    /// Applies a parser to a given Char list, and returns either
+    /// the result or a formatted error string.
     let runFmt p cs =
         run p cs
         |> function
@@ -44,7 +47,7 @@ module ParserPrimitives =
 
                 msg + "\n" + line + pointer |> Error
 
-    /// andThen
+    /// Matches two parsers, and tuples the results.
     let (.>>.) p1 p2 =
         let innerFn input =
             match run p1 input with
@@ -56,6 +59,7 @@ module ParserPrimitives =
 
         Parser innerFn
 
+    /// Matches two parsers, ignoring the result of the first.
     let (>>.) p1 p2 =
         let innerFn input =
             match run p1 input with
@@ -67,6 +71,7 @@ module ParserPrimitives =
 
         Parser innerFn
 
+    /// Matches two parsers, ignoring the result of the second.
     let (.>>) p1 p2 =
         let innerFn input =
             match run p1 input with
@@ -78,7 +83,7 @@ module ParserPrimitives =
 
         Parser innerFn
 
-    /// orElse
+    /// Matches either of the parsers.
     let (<|>) p1 p2 =
         let innerFn input =
             match run p1 input with
@@ -87,7 +92,7 @@ module ParserPrimitives =
 
         Parser innerFn
 
-    /// map
+    /// Applies a function to the successful output of a parser.
     let map f p1 =
         let innerFn input =
             match run p1 input with
@@ -96,9 +101,10 @@ module ParserPrimitives =
 
         Parser innerFn
 
+    /// Applies a function to the successful output of a parser.
     let (|>>) p1 f = map f p1
 
-    /// Replaces the expected value of a failure
+    /// Replaces the expected value of a failure.
     let (<?>) parser label =
         let innerFn input =
             match run parser input with
@@ -107,16 +113,16 @@ module ParserPrimitives =
 
         Parser innerFn
 
-    /// Matches any parser
+    /// Matches any parser in the list.
     let any parsers = parsers |> Seq.reduce (<|>)
 
-    /// Matches a list of items in sequence
+    /// Matches a list of items in sequence.
     let sequence parsers =
         parsers
         |> Seq.map (map List.singleton)
         |> Seq.reduce (fun x y -> (x .>>. y) |>> ((<||) List.append))
 
-    /// Matches Some or None
+    /// Matches Some or None.
     let maybe parser =
         let innerFn input =
             match run parser input with
@@ -125,7 +131,7 @@ module ParserPrimitives =
 
         Parser innerFn
 
-    /// Matches zero or more
+    /// Matches zero or more parsers.
     let many parser =
         let rec innerFn matched input =
             match run parser input with
@@ -134,10 +140,17 @@ module ParserPrimitives =
 
         Parser(innerFn [])
 
-    /// Matches one or more
-    let many1 parser = parser .>>. (many parser)
+    /// Matches exactly n parsers, where n >= 1.
+    let exactly n parser =
+        Seq.init n (fun _ -> parser) |> sequence
 
-    /// Matches one character exactly
+    /// Matches n or more, where n >= 1.
+    /// Use 'many' when n = 0.
+    let atleast n parser =
+        exactly n parser .>>. many parser
+        |>> ((<||) List.append)
+
+    /// Matches one character exactly.
     let pChar a =
         let innerFn input =
             match input with
@@ -157,6 +170,7 @@ module ParserPrimitives =
 
         Parser innerFn
 
+    /// Matches any character that doesn't appear in the list.
     let pAnyOtherChar str =
         let innerFn input =
             match input with
@@ -176,10 +190,10 @@ module ParserPrimitives =
 
         Parser innerFn
 
-    /// Matches any char
+    /// Matches any character in the list.
     let pAnyChar str = str |> Seq.map pChar |> any
 
-    /// Matches a string
+    /// Matches a string.
     let pString (str: string) =
         str |> Seq.map pChar |> sequence |>> string
         <?> sprintf "'%s'" str

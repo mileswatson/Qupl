@@ -26,7 +26,8 @@ module Lexer =
                 |> List.mapi (fun charNum char -> Char(char, (lineNum + 1, charNum + 1))))
         |> List.concat
 
-    let whitespace = many1 (pAnyChar " 	") <?> "whitespace"
+    let whitespace =
+        atleast 1 (pAnyChar " 	") <?> "whitespace"
 
     // Matches a comment until a new line is reached
     let comment =
@@ -40,7 +41,7 @@ module Lexer =
             maybe whitespace >>. maybe comment >>. pChar '\n'
             .>> maybe whitespace
 
-        many1 _newline <?> "a new line"
+        atleast 1 _newline <?> "a new line"
 
     let tokenise =
         newline >>. pString "never gonna give you up"
