@@ -7,7 +7,7 @@
     <Compile Include="Quantum/Complex.fs" />
     <Compile Include="Quantum/Matrix.fs" />
     <Compile Include="Quantum/Quantum.fs" />
-    <Compile Include="Interpreter/Parsing.fs" />
+    <Compile Include="Interpreter/ParserPrimitives.fs" />
     <Compile Include="Interpreter/Lexer.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

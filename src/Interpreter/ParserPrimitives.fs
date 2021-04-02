@@ -1,6 +1,6 @@
 namespace Interpreter
 
-module Parsing =
+module ParserPrimitives =
 
     type Char = char * (int * int)
 

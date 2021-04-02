@@ -13,6 +13,8 @@ type Token =
 
 module Lexer =
 
+    open ParserPrimitives
+
     let removeCarriageReturns (code: string) = code.Replace("\r", "")
 
     let removeComments (code: string) =
@@ -30,18 +32,16 @@ module Lexer =
                     List.empty
                 else
                     (Seq.toList line) @ [ '\n' ]
-                    |> List.mapi (fun charNum char -> Parsing.Char(char, (lineNum + 1, charNum + 1))))
+                    |> List.mapi (fun charNum char -> Char(char, (lineNum + 1, charNum + 1))))
         |> List.concat
 
-    let pWhitespace =
-        Parsing.any [ Parsing.pChar '\n'
-                      Parsing.pChar '\t' ]
+    let pWhitespace = pAnyChar " \n\t"
 
-    let tokenise = Parsing.pString "funq"
+    let tokenise = pString "funq"
 
     let lex (input: string) =
         input
         |> removeCarriageReturns
         |> removeComments
         |> characterise
-        |> Parsing.runFmt tokenise
+        |> runFmt tokenise
