@@ -29,13 +29,13 @@ module Lexer =
     let whitespace =
         atleast 1 (pAnyChar " 	") <?> "whitespace"
 
-    // Matches a comment until a new line is reached
+    // Matches a comment until a new line is reached.
     let comment =
         pString "//" >>. many (pAnyOtherChar "\n")
         |>> System.String.Concat
 
     /// Matches a new line, even if there is whitespace / a comment
-    /// before or whitespace after the '\n' char
+    /// before or whitespace after the '\n' char.
     let newline =
         let _newline =
             maybe whitespace >>. maybe comment >>. pChar '\n'
