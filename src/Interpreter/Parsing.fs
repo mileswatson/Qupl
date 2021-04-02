@@ -17,39 +17,38 @@ module Lexer =
 
     let removeCarriageReturns (code: string) = code.Replace("\r", "")
 
-    let removeComments (code: string) =
-        code.Split("\n")
-        |> Seq.map (fun line -> line.Split("//").[0])
-        |> String.concat "\n"
-
     let characterise (code: string) =
         code.Split("\n")
         |> Array.toList
         |> List.mapi
             (fun lineNum line ->
-                if String.length line = 0
-                   || System.String.IsNullOrWhiteSpace line then
-                    List.empty
-                else
-                    (Seq.toList line) @ [ '\n' ]
-                    |> List.mapi (fun charNum char -> Char(char, (lineNum + 1, charNum + 1))))
+                (Seq.toList line) @ [ '\n' ]
+                |> List.mapi (fun charNum char -> Char(char, (lineNum + 1, charNum + 1))))
         |> List.concat
 
     let whitespace = many1 (pAnyChar " 	") <?> "whitespace"
 
-    /// Matches a new line, even if surrounded by whitespace
+    // Matches a comment until a new line is reached
+    let comment =
+        pString "//" >>. many (pAnyOtherChar "\n")
+        |>> System.String.Concat
+
+    /// Matches a new line, even if there is whitespace / a comment
+    /// before or whitespace after the '\n' char
     let newline =
-        maybe whitespace >>. (pChar '\n')
-        .>> maybe whitespace
-        <?> "a new line"
+        let _newline =
+            maybe whitespace >>. maybe comment >>. pChar '\n'
+            .>> maybe whitespace
+
+        many1 _newline <?> "a new line"
 
     let tokenise =
-        pString "never gonna give you up" .>> newline
+        newline >>. pString "never gonna give you up"
+        .>> newline
         >>. pString "never gonna let you down"
 
     let lex (input: string) =
         input
         |> removeCarriageReturns
-        |> removeComments
         |> characterise
         |> runFmt tokenise

@@ -157,6 +157,25 @@ module ParserPrimitives =
 
         Parser innerFn
 
+    let pAnyOtherChar str =
+        let innerFn input =
+            match input with
+            | [] -> Failure((0, 0), sprintf "a character not in %A" str, "EOF")
+            | (head: Char) :: remaining ->
+                if Seq.contains (fst head) str then
+                    let found =
+                        match fst head with
+                        | '\n' -> "'\\n' (a new line)"
+                        | '\t' -> "'\\t' (a tab)"
+                        | ' ' -> "' ' (a space)"
+                        | c -> sprintf "'%c'" c
+
+                    Failure(snd head, sprintf "a character not in %A" str, found)
+                else
+                    Success(head, remaining)
+
+        Parser innerFn
+
     /// Matches any char
     let pAnyChar str = str |> Seq.map pChar |> any
 
