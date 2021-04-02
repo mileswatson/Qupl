@@ -81,6 +81,32 @@ module Parsing =
 
         Parser innerFn
 
+    /// Matches one character exactly
+    let pchar a =
+        let innerFn input =
+            match input with
+            | [] -> Failure((0, 0), string a, "EOF")
+            | (head: Char) :: remaining ->
+                if fst head = a then
+                    Success(head, remaining)
+                else
+                    Failure(snd head, string a, string (fst head))
+
+        Parser innerFn
+
+    /// Matches a list of items in sequence
+    let sequence parsers =
+        parsers
+        |> Seq.map (map List.singleton)
+        |> Seq.reduce (fun x y -> (x .>>. y) |>> ((<||) List.append))
+
+    /// Matches a string
+    let pstring (str: string) =
+        str |> Seq.map pchar |> sequence |>> string
+
+    /// Matches any parser
+    let any parsers = parsers |> Seq.reduce (<|>)
+
     /// Matches Some or None
     let maybe parser =
         let innerFn input =
@@ -101,36 +127,3 @@ module Parsing =
 
     /// Matches one or more
     let many1 parser = parser .>>. (many parser)
-
-    /// Matches one
-    let pchar a =
-        let innerFn input =
-            match input with
-            | [] -> Failure((0, 0), string a, "EOF")
-            | (head: Char) :: remaining ->
-                if fst head = a then
-                    Success(head, remaining)
-                else
-                    Failure(snd head, string a, string (fst head))
-
-        Parser innerFn
-
-    /// Matches any of the parsers
-    let any aSeq =
-        let innerFn input =
-            match input with
-            | [] -> Failure((0, 0), sprintf "%A" aSeq, "EOF")
-            | (head: Char) :: remaining ->
-                if Seq.contains (fst head) aSeq then
-                    Success(fst head, remaining)
-                else
-                    Failure((0, 0), sprintf "%A" aSeq, string (fst head))
-
-        Parser innerFn
-
-    /// Matches a string
-    let sequence str =
-        str
-        |> Seq.map pchar
-        |> Seq.map (map List.singleton)
-        |> Seq.reduce (fun x y -> (x .>>. y) |>> ((<||) List.append))
