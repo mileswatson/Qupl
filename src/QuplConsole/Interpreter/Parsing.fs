@@ -1,15 +1,25 @@
 namespace Interpreter
 
-type Keyword =
-    | Let
-    | Funq
+type Identifier = Identifier of string
+
+type State =
+    | Zero
+    | One
+    | Identifier
+
+type ParallelStates = State list
+
+type ParallelGates =
+    | ParallelGates of Identifier list
     | Log
 
-type Token =
-    | Keyword of Keyword
-    | Identifier of string
-    | Space
-    | Newline
+type SequentialGates = ParallelGates list
+
+type Definition =
+    | Let of Identifier * ParallelStates * SequentialGates
+    | Funq of Identifier * SequentialGates
+
+type Program = Program of Definition list
 
 module Lexer =
 
