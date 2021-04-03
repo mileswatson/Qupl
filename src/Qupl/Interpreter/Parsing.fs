@@ -28,7 +28,7 @@ module Lexer =
     let removeCarriageReturns (code: string) = code.Replace("\r", "")
 
     let characterise (code: string) =
-        code.Split("\n")
+        code.Split('\n')
         |> Array.toList
         |> List.mapi
             (fun lineNum line ->
