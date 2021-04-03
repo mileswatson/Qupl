@@ -25,7 +25,7 @@
     <Owners>mileswatson</Owners>
     <RepositoryUrl>https://github.com/mileswatson/Qupl</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <Description>A simple, interpreted Quantum Programming Language. Library includes the Qupl parser, virtual machine, and runtime.</Description>
+    <Description>A simple, interpreted quantum programming language. Includes the Qupl parser, virtual machine, and runtime.</Description>
     <PackageTags>Quantum Interpreter Compiler Simulator Simple</PackageTags>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
