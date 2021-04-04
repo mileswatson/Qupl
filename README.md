@@ -42,23 +42,27 @@
 
 Deutsch's algorithm can be used to tell in a single pass whether a function is constant or balanced.
 
-```
-let blackbox =
-    H H     // here is a comment
+```fs
 
-funq deutsch(G: 2) =
-    0 1
+// A function is sequence of parallel gates
+
+funq blackbox =
+    I I         // These are both identity gates - they do nothing
+    CNOT        // This gate is a CNOT - it is two qubits wide
+
+// A let definition is starting state, which can
+// be followed by a sequence of parallel gates.
+let deutsch =
+    0 1         // These are the initial starting states
     H H
 
-    log
-    G
+    log         // You can debug intermediate states
+    blackbox
     log
 
     H H
-
 
 let main =
-    deutsch(blackbox)
-    out
+    deutsch
 
 ```
