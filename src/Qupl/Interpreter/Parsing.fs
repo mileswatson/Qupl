@@ -52,7 +52,6 @@ module Parser =
     let newline =
         let _newline =
             maybe whitespace >>. maybe comment >>. pChar '\n'
-            .>> maybe whitespace
 
         atleast 1 _newline <?> "a new line"
 
@@ -71,7 +70,7 @@ module Parser =
         <|> (identifier |>> StateExp)
         <?> "a state expression (0, 1, or an identifier)"
 
-    /// Matches multiple states in parallel.
+    /// Matches multiple states on the same line, separated by whitespace.
     let parallelStates =
         state .>>. many (whitespace >>. state)
         |>> function
@@ -79,7 +78,7 @@ module Parser =
         |>> ParallelStates
         <?> "at least one state expression (separated by whitespace)"
 
-    /// Matches gates on the same line separated by whitespace.
+    /// Matches multiple gates on the same line, separated by whitespace.
     let parallelGates =
         (pString "log" |>> (fun _ -> Log))
         <|> (identifier .>>. many (whitespace >>. identifier)
@@ -90,7 +89,7 @@ module Parser =
 
     /// Matches multiple parallel gate expressions, separated by newlines.
     let sequentialGates =
-        atleast 1 (parallelGates .>> newline)
+        separated whitespace (parallelGates .>> newline)
         |>> SequentialGates
         <?> "at least 1 parallel gate expression"
 
@@ -100,9 +99,9 @@ module Parser =
         .>> maybe whitespace
         .>> pChar '='
         .>> maybe whitespace
-        .>> maybe newline
+        .>> maybe (newline .>>. whitespace)
         .>>. parallelStates
-        .>> newline
+        .>> (newline .>>. whitespace)
         .>>. maybe sequentialGates
         |>> function
         | ((name, states), gates) -> Let(name, states, gates)
@@ -113,7 +112,7 @@ module Parser =
         .>> maybe whitespace
         .>> pChar '='
         .>> maybe whitespace
-        .>> maybe newline
+        .>> maybe (newline .>>. whitespace)
         .>>. sequentialGates
         |>> Funq
 
@@ -125,10 +124,10 @@ module Parser =
                 <?> "expected 'let' or 'funq' keyword"
 
             match run letOrFunq input with
-            | Success ("let", remaining) -> run letDefinition remaining
             | Failure (p, e, f) -> Failure(p, e, f)
+            | Success ("let", remaining) -> run letDefinition remaining
             | Success ("funq", remaining) -> run funqDefinition remaining
-            | Success (matched, remaining) -> failwithf "Unexpected match '%s'" matched
+            | Success (matched, _) -> failwithf "Unexpected match '%s'" matched
 
         Parser innerFn
 

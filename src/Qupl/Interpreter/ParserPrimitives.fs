@@ -162,6 +162,12 @@ module ParserPrimitives =
         exactly n parser .>>. many parser
         |>> ((<||) List.append)
 
+    /// Matches at least 1 instance of 'parser' separated by 'separator'.
+    let separated separator parser =
+        parser .>>. many (separator >>. parser)
+        |>> function
+        | (a, m) -> a :: m
+
     /// Converts characters to strings, with special cases
     /// for invisible chars.
     let private charToString =
