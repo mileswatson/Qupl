@@ -1,27 +1,27 @@
 namespace Interpreter
 
-type Identifier = Identifier of string
-
-type State =
-    | Zero
-    | One
-    | StateExp of Identifier
-
-type ParallelStates = ParallelStates of State list
-
-type ParallelGates =
-    | ParallelGates of Identifier list
-    | Log
-
-type SequentialGates = SequentialGates of ParallelGates list
-
-type Definition =
-    | Let of Identifier * ParallelStates * SequentialGates option
-    | Funq of Identifier * SequentialGates
-
-type Program = Program of Definition list
-
 module Parser =
+
+    type Identifier = Identifier of string
+
+    type State =
+        | Zero
+        | One
+        | StateExp of Identifier
+
+    type ParallelStates = ParallelStates of State list
+
+    type ParallelGates =
+        | ParallelGates of Identifier list
+        | Log
+
+    type SequentialGates = SequentialGates of ParallelGates list
+
+    type Definition =
+        | Let of Identifier * ParallelStates * SequentialGates option
+        | Funq of Identifier * SequentialGates
+
+    type Program = Program of Definition list
 
     open ParserPrimitives
 
