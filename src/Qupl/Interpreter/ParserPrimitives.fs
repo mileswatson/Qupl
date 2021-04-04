@@ -179,7 +179,7 @@ module ParserPrimitives =
                     Success(head, remaining)
                 else
                     let found = fst head |> charToString
-                    Failure(snd head, string a, found)
+                    Failure(snd head, charToString a, found)
 
         Parser innerFn
 
