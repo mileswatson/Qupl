@@ -7,7 +7,7 @@ let main argv =
         -1
     else
         System.IO.File.ReadAllText argv.[0]
-        |> parse
+        |> generateSyntaxTree
         |> function
         | Ok _ -> printfn "Success!"
         | Error msg -> printfn "%s" msg
