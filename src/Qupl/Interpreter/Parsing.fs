@@ -5,23 +5,23 @@ type Identifier = Identifier of string
 type State =
     | Zero
     | One
-    | Identifier
+    | StateExp of Identifier
 
-type ParallelStates = State list
+type ParallelStates = ParallelStates of State list
 
 type ParallelGates =
     | ParallelGates of Identifier list
     | Log
 
-type SequentialGates = ParallelGates list
+type SequentialGates = SequentialGates of ParallelGates list
 
 type Definition =
-    | Let of Identifier * ParallelStates * SequentialGates
+    | Let of Identifier * ParallelStates * SequentialGates option
     | Funq of Identifier * SequentialGates
 
 type Program = Program of Definition list
 
-module Lexer =
+module Parser =
 
     open ParserPrimitives
 
@@ -53,12 +53,78 @@ module Lexer =
 
         atleast 1 _newline <?> "a new line"
 
-    let tokenise =
-        newline >>. pString "never gonna give you up"
-        .>> newline
-        >>. pString "never gonna let you down"
+    /// Matches an alphabetic identifier
+    let identifier =
+        pAnyChar [ 'a' .. 'z' ]
+        <|> pAnyChar [ 'A' .. 'Z' ]
+        |> atleast 1
+        |>> (System.String.Concat >> Identifier)
+        <?> "an identifier (alphabetic string)"
 
-    let lex (input: string) =
+    let state =
+        (pChar '0' |>> (fun _ -> Zero))
+        <|> (pChar '1' |>> (fun _ -> One))
+        <|> (identifier |>> StateExp)
+        <?> "a state expression (0, 1, or an identifier)"
+
+    let parallelStates =
+        state .>>. many (whitespace >>. state)
+        |>> function
+        | (a, m) -> a :: m
+        |>> ParallelStates
+        <?> "at least one state expression (separated by whitespace)"
+
+    let parallelGates =
+        (pString "log" |>> (fun _ -> Log))
+        <|> (identifier .>>. many (whitespace >>. identifier)
+             |>> function
+             | (a, m) -> a :: m
+             |>> ParallelGates)
+        <?> "either a 'log' keyword or at least one gate (separated by whitespace)"
+
+    let sequentialGates =
+        atleast 1 (parallelGates .>> newline)
+        |>> SequentialGates
+        <?> "at least 1 parallel gate expression"
+
+    let letDefinition =
+        whitespace >>. identifier
+        .>> maybe whitespace
+        .>> pChar '='
+        .>> maybe whitespace
+        .>> maybe newline
+        .>>. parallelStates
+        .>> newline
+        .>>. maybe sequentialGates
+        |>> function
+        | ((name, states), gates) -> Let(name, states, gates)
+
+    let funqDefinition =
+        whitespace >>. identifier
+        .>> maybe whitespace
+        .>> pChar '='
+        .>> maybe whitespace
+        .>> maybe newline
+        .>>. sequentialGates
+        |>> Funq
+
+    let definition =
+        let innerFn input =
+            let letOrFunq =
+                pString "let" <|> pString "funq"
+                <?> "expected 'let' or 'funq' keyword"
+
+            match run letOrFunq input with
+            | Success ("let", remaining) -> run letDefinition remaining
+            | Failure (p, e, f) -> Failure(p, e, f)
+            | Success ("funq", remaining) -> run funqDefinition remaining
+            | Success (matched, remaining) -> failwithf "Unexpected match '%s'" matched
+
+        Parser innerFn
+
+    let tokenise = maybe newline >>. untilEnd definition
+
+    let parse (input: string) =
         input
         |> removeCarriageReturns
         |> characterise

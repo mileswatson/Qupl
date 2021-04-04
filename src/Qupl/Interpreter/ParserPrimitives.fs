@@ -140,6 +140,17 @@ module ParserPrimitives =
 
         Parser(innerFn [])
 
+    let untilEnd parser =
+        let rec innerFn matched =
+            function
+            | [] -> Success(List.rev matched, [])
+            | input ->
+                match run parser input with
+                | Failure (p, e, f) -> Failure(p, e, f)
+                | Success (a, remaining) -> innerFn (a :: matched) remaining
+
+        Parser(innerFn [])
+
     /// Matches exactly n parsers, where n >= 1.
     let exactly n parser =
         Seq.init n (fun _ -> parser) |> sequence
@@ -150,6 +161,14 @@ module ParserPrimitives =
         exactly n parser .>>. many parser
         |>> ((<||) List.append)
 
+    let private charToString =
+        function
+        | '\n' -> "'\\n' (a new line)"
+        | '\t' -> "'\\t' (a tab)"
+        | ' ' -> "' ' (a space)"
+        | c -> sprintf "'%c'" c
+
+
     /// Matches one character exactly.
     let pChar a =
         let innerFn input =
@@ -159,13 +178,7 @@ module ParserPrimitives =
                 if fst head = a then
                     Success(head, remaining)
                 else
-                    let found =
-                        match fst head with
-                        | '\n' -> "'\\n' (a new line)"
-                        | '\t' -> "'\\t' (a tab)"
-                        | ' ' -> "' ' (a space)"
-                        | c -> sprintf "'%c'" c
-
+                    let found = fst head |> charToString
                     Failure(snd head, string a, found)
 
         Parser innerFn
@@ -177,13 +190,7 @@ module ParserPrimitives =
             | [] -> Failure((0, 0), sprintf "a character not in %A" str, "EOF")
             | (head: Char) :: remaining ->
                 if Seq.contains (fst head) str then
-                    let found =
-                        match fst head with
-                        | '\n' -> "'\\n' (a new line)"
-                        | '\t' -> "'\\t' (a tab)"
-                        | ' ' -> "' ' (a space)"
-                        | c -> sprintf "'%c'" c
-
+                    let found = fst head |> charToString
                     Failure(snd head, sprintf "a character not in %A" str, found)
                 else
                     Success(head, remaining)
@@ -195,5 +202,6 @@ module ParserPrimitives =
 
     /// Matches a string.
     let pString (str: string) =
-        str |> Seq.map pChar |> sequence |>> string
+        str |> Seq.map pChar |> sequence
+        |>> (List.map fst >> System.String.Concat)
         <?> sprintf "'%s'" str

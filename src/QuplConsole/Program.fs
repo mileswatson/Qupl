@@ -1,4 +1,4 @@
-open Interpreter.Lexer
+open Interpreter.Parser
 
 [<EntryPoint>]
 let main argv =
@@ -7,7 +7,7 @@ let main argv =
         -1
     else
         System.IO.File.ReadAllText argv.[0]
-        |> lex
+        |> parse
         |> function
         | Ok _ -> printfn "Success!"
         | Error msg -> printfn "%s" msg
