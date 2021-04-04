@@ -140,6 +140,7 @@ module ParserPrimitives =
 
         Parser(innerFn [])
 
+    /// Matches zero or more parsers until the end of the stream.
     let untilEnd parser =
         let rec innerFn matched =
             function
@@ -161,13 +162,14 @@ module ParserPrimitives =
         exactly n parser .>>. many parser
         |>> ((<||) List.append)
 
+    /// Converts characters to strings, with special cases
+    /// for invisible chars.
     let private charToString =
         function
         | '\n' -> "'\\n' (a new line)"
         | '\t' -> "'\\t' (a tab)"
         | ' ' -> "' ' (a space)"
         | c -> sprintf "'%c'" c
-
 
     /// Matches one character exactly.
     let pChar a =

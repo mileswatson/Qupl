@@ -25,8 +25,10 @@ module Parser =
 
     open ParserPrimitives
 
+    /// Removes characters that increase complexity of parsing.
     let removeCarriageReturns (code: string) = code.Replace("\r", "")
 
+    /// Splits string into a list of Chars
     let characterise (code: string) =
         code.Split('\n')
         |> Array.toList
@@ -36,6 +38,7 @@ module Parser =
                 |> List.mapi (fun charNum char -> Char(char, (lineNum + 1, charNum + 1))))
         |> List.concat
 
+    /// Matches whitespace (except new lines).
     let whitespace =
         atleast 1 (pAnyChar " 	") <?> "whitespace"
 
@@ -53,7 +56,7 @@ module Parser =
 
         atleast 1 _newline <?> "a new line"
 
-    /// Matches an alphabetic identifier
+    /// Matches an alphabetic identifier.
     let identifier =
         pAnyChar [ 'a' .. 'z' ]
         <|> pAnyChar [ 'A' .. 'Z' ]
@@ -61,12 +64,14 @@ module Parser =
         |>> (System.String.Concat >> Identifier)
         <?> "an identifier (alphabetic string)"
 
+    /// Matches a state expression (0, 1, or an identifer).
     let state =
         (pChar '0' |>> (fun _ -> Zero))
         <|> (pChar '1' |>> (fun _ -> One))
         <|> (identifier |>> StateExp)
         <?> "a state expression (0, 1, or an identifier)"
 
+    /// Matches multiple states in parallel.
     let parallelStates =
         state .>>. many (whitespace >>. state)
         |>> function
@@ -74,6 +79,7 @@ module Parser =
         |>> ParallelStates
         <?> "at least one state expression (separated by whitespace)"
 
+    /// Matches gates on the same line separated by whitespace.
     let parallelGates =
         (pString "log" |>> (fun _ -> Log))
         <|> (identifier .>>. many (whitespace >>. identifier)
@@ -82,11 +88,13 @@ module Parser =
              |>> ParallelGates)
         <?> "either a 'log' keyword or at least one gate (separated by whitespace)"
 
+    /// Matches multiple parallel gate expressions, separated by newlines.
     let sequentialGates =
         atleast 1 (parallelGates .>> newline)
         |>> SequentialGates
         <?> "at least 1 parallel gate expression"
 
+    /// Matches a 'let' definition (not including the keyword).
     let letDefinition =
         whitespace >>. identifier
         .>> maybe whitespace
@@ -99,6 +107,7 @@ module Parser =
         |>> function
         | ((name, states), gates) -> Let(name, states, gates)
 
+    /// Matches a 'funq' definition (not including keyword).
     let funqDefinition =
         whitespace >>. identifier
         .>> maybe whitespace
@@ -108,6 +117,7 @@ module Parser =
         .>>. sequentialGates
         |>> Funq
 
+    /// Matches either a 'funq' or a 'let' definition.
     let definition =
         let innerFn input =
             let letOrFunq =
@@ -122,10 +132,13 @@ module Parser =
 
         Parser innerFn
 
-    let tokenise = maybe newline >>. untilEnd definition
+    /// Matches definitions until the end of the stream is reached.
+    let parse =
+        maybe newline >>. untilEnd definition |>> Program
 
-    let parse (input: string) =
+    /// Generates an abstract syntax tree.
+    let generateSyntaxTree (input: string) =
         input
         |> removeCarriageReturns
         |> characterise
-        |> runFmt tokenise
+        |> runFmt parse
