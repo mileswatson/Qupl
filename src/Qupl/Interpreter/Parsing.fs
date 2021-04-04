@@ -1,6 +1,6 @@
 namespace Interpreter
 
-module Parser =
+module Parsing =
 
     type Identifier = Identifier of string
 
