@@ -18,10 +18,8 @@ module Syntax =
     type SequentialGates = SequentialGates of ParallelGates list
 
     type Definition =
-        | Let of Identifier * ParallelStates * SequentialGates
-        | Funq of Identifier * SequentialGates
-
-    type Program = Program of Definition list
+        | Let of ParallelStates * SequentialGates
+        | Funq of SequentialGates
 
     open Parsing
 
@@ -103,8 +101,8 @@ module Syntax =
         .>>. parallelStates
         .>>. maybe (newline .>>. whitespace >>. sequentialGates)
         |>> function
-        | ((name, states), Some (gates)) -> Let(name, states, gates)
-        | ((name, states), None) -> Let(name, states, SequentialGates [])
+        | ((name, states), Some (gates)) -> name, Let(states, gates)
+        | ((name, states), None) -> name, Let(states, SequentialGates [])
 
     /// Matches a 'funq' definition (not including keyword).
     let funqDefinition =
@@ -113,8 +111,7 @@ module Syntax =
         .>> pChar '='
         .>> maybe whitespace
         .>> maybe (newline .>>. whitespace)
-        .>>. sequentialGates
-        |>> Funq
+        .>>. (sequentialGates |>> Funq)
 
     /// Matches either a 'funq' or a 'let' definition.
     let definition =
@@ -135,7 +132,6 @@ module Syntax =
     let parse =
         maybe newline
         >>. untilEnd (definition .>> maybe newline)
-        |>> Program
 
     /// Generates an abstract syntax tree.
     let generateSyntaxTree (input: string) =

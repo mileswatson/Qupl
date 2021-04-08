@@ -1,19 +1,17 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net5.0;netstandard2.0</TargetFrameworks>
     <AssemblyName>Qupl</AssemblyName>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="Quantum/Complex.fs" />
     <Compile Include="Quantum/Matrix.fs" />
     <Compile Include="Quantum/Quantum.fs" />
     <Compile Include="Interpreter/Parsing.fs" />
     <Compile Include="Interpreter/Syntax.fs" />
+    <Compile Include="Interpreter/Semantics.fs" />
   </ItemGroup>
-
   <PropertyGroup>
     <PackOnBuild>true</PackOnBuild>
     <PackageId>Qupl</PackageId>
@@ -29,9 +27,7 @@
     <PackageTags>Quantum Interpreter Compiler Simulator Simple</PackageTags>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
-  
   <ItemGroup>
     <None Include="../../img/icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
-
 </Project>
