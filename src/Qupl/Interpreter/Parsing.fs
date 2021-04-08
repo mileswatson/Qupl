@@ -2,144 +2,214 @@ namespace Interpreter
 
 module Parsing =
 
-    type Identifier = Identifier of string
+    type Char = char * (int * int)
 
-    type State =
-        | Zero
-        | One
-        | StateExp of Identifier
+    type Position = int * int
 
-    type ParallelStates = ParallelStates of State list
+    type Expected = string
 
-    type ParallelGates =
-        | ParallelGates of Identifier list
-        | Log
+    type Found = string
 
-    type SequentialGates = SequentialGates of ParallelGates list
+    type Result<'a> =
+        | Success of 'a * Char list
+        | Failure of Position * Expected * Found
 
-    type Definition =
-        | Let of Identifier * ParallelStates * SequentialGates
-        | Funq of Identifier * SequentialGates
+    type Parser<'a> = Parser of (Char list -> Result<'a>)
 
-    type Program = Program of Definition list
+    /// Applies a parser to a given Char list.
+    let run (Parser p) = p
 
-    open ParserPrimitives
+    /// Applies a parser to a given Char list, and returns either
+    /// the result or a formatted error string.
+    let runFmt p cs =
+        run p cs
+        |> function
+        | Success (a, _) -> Ok a
+        | Failure (p, e, f) ->
+            let lineNum, charNum = p
 
-    /// Removes characters that increase complexity of parsing.
-    let removeCarriageReturns (code: string) = code.Replace("\r", "")
+            if lineNum <= 0 || charNum <= 0 then
+                sprintf "Expected %s but found %s" e f |> Error
+            else
+                let msg =
+                    sprintf "(%i, %i) Expected %s but found %s instead." (fst p) (snd p) e f
 
-    /// Splits string into a list of Chars
-    let characterise (code: string) =
-        code.Split('\n')
-        |> Array.toList
-        |> List.mapi
-            (fun lineNum line ->
-                (Seq.toList line) @ [ '\n' ]
-                |> List.mapi (fun charNum char -> Char(char, (lineNum + 1, charNum + 1))))
-        |> List.concat
+                let line =
+                    cs
+                    |> Seq.where
+                        (function
+                        | (_, p) when fst p = lineNum -> true
+                        | _ -> false)
+                    |> Seq.map fst
+                    |> System.String.Concat
 
-    /// Matches whitespace (except new lines).
-    let whitespace =
-        atleast 1 (pAnyChar " 	") <?> "whitespace"
+                let pointer = String.replicate (charNum - 1) " " + "^"
 
-    // Matches a comment until a new line is reached.
-    let comment =
-        pString "//" >>. many (pAnyOtherChar "\n")
-        |>> System.String.Concat
+                msg + "\n" + line + pointer |> Error
 
-    /// Matches a new line, even if there is whitespace / a comment
-    /// before or whitespace after the '\n' char.
-    let newline =
-        let _newline =
-            maybe whitespace >>. maybe comment >>. pChar '\n'
-
-        atleast 1 _newline <?> "a new line"
-
-    /// Matches an alphabetic identifier.
-    let identifier =
-        pAnyChar [ 'a' .. 'z' ]
-        <|> pAnyChar [ 'A' .. 'Z' ]
-        |> atleast 1
-        |>> (System.String.Concat >> Identifier)
-        <?> "an identifier (alphabetic string)"
-
-    /// Matches a state expression (0, 1, or an identifer).
-    let state =
-        (pChar '0' |>> (fun _ -> Zero))
-        <|> (pChar '1' |>> (fun _ -> One))
-        <|> (identifier |>> StateExp)
-        <?> "a state expression (0, 1, or an identifier)"
-
-    /// Matches multiple states on the same line, separated by whitespace.
-    let parallelStates =
-        state .>>. many (whitespace >>. state)
-        |>> function
-        | (a, m) -> a :: m
-        |>> ParallelStates
-        <?> "at least one state expression (separated by whitespace)"
-
-    /// Matches multiple gates on the same line, separated by whitespace.
-    let parallelGates =
-        (pString "log" |>> (fun _ -> Log))
-        <|> (identifier .>>. many (whitespace >>. identifier)
-             |>> function
-             | (a, m) -> a :: m
-             |>> ParallelGates)
-        <?> "either a 'log' keyword or at least one gate (separated by whitespace)"
-
-    /// Matches multiple parallel gate expressions, separated by newlines.
-    let sequentialGates =
-        separated whitespace (parallelGates .>> newline)
-        |>> SequentialGates
-        <?> "at least 1 parallel gate expression"
-
-    /// Matches a 'let' definition (not including the keyword).
-    let letDefinition =
-        whitespace >>. identifier
-        .>> maybe whitespace
-        .>> pChar '='
-        .>> maybe whitespace
-        .>> maybe (newline .>>. whitespace)
-        .>>. parallelStates
-        .>>. maybe (newline .>>. whitespace >>. sequentialGates)
-        |>> function
-        | ((name, states), Some (gates)) -> Let(name, states, gates)
-        | ((name, states), None) -> Let(name, states, SequentialGates [])
-
-    /// Matches a 'funq' definition (not including keyword).
-    let funqDefinition =
-        whitespace >>. identifier
-        .>> maybe whitespace
-        .>> pChar '='
-        .>> maybe whitespace
-        .>> maybe (newline .>>. whitespace)
-        .>>. sequentialGates
-        |>> Funq
-
-    /// Matches either a 'funq' or a 'let' definition.
-    let definition =
+    /// Matches two parsers, and tuples the results.
+    let (.>>.) p1 p2 =
         let innerFn input =
-            let letOrFunq =
-                pString "let" <|> pString "funq"
-                <?> "expected 'let' or 'funq' keyword"
-
-            match run letOrFunq input with
+            match run p1 input with
             | Failure (p, e, f) -> Failure(p, e, f)
-            | Success ("let", remaining) -> run letDefinition remaining
-            | Success ("funq", remaining) -> run funqDefinition remaining
-            | Success (matched, _) -> failwithf "Unexpected match '%s'" matched
+            | Success (a1, remaining) ->
+                match run p2 remaining with
+                | Failure (p, e, f) -> Failure(p, e, f)
+                | Success (a2, remaining) -> Success((a1, a2), remaining)
 
         Parser innerFn
 
-    /// Matches definitions until the end of the stream is reached.
-    let parse =
-        maybe newline
-        >>. untilEnd (definition .>> maybe newline)
-        |>> Program
+    /// Matches two parsers, ignoring the result of the first.
+    let (>>.) p1 p2 =
+        let innerFn input =
+            match run p1 input with
+            | Failure (p, e, f) -> Failure(p, e, f)
+            | Success (_, remaining) ->
+                match run p2 remaining with
+                | Failure (p, e, f) -> Failure(p, e, f)
+                | Success (a2, remaining) -> Success(a2, remaining)
 
-    /// Generates an abstract syntax tree.
-    let generateSyntaxTree (input: string) =
-        input
-        |> removeCarriageReturns
-        |> characterise
-        |> runFmt parse
+        Parser innerFn
+
+    /// Matches two parsers, ignoring the result of the second.
+    let (.>>) p1 p2 =
+        let innerFn input =
+            match run p1 input with
+            | Failure (p, e, f) -> Failure(p, e, f)
+            | Success (a1, remaining) ->
+                match run p2 remaining with
+                | Failure (p, e, f) -> Failure(p, e, f)
+                | Success (_, remaining) -> Success(a1, remaining)
+
+        Parser innerFn
+
+    /// Matches either of the parsers.
+    let (<|>) p1 p2 =
+        let innerFn input =
+            match run p1 input with
+            | Success (a, remaining) -> Success(a, remaining)
+            | Failure _ -> run p2 input
+
+        Parser innerFn
+
+    /// Applies a function to the successful output of a parser.
+    let map f p1 =
+        let innerFn input =
+            match run p1 input with
+            | Success (a, remaining) -> Success(f a, remaining)
+            | Failure (p, e, f) -> Failure(p, e, f)
+
+        Parser innerFn
+
+    /// Applies a function to the successful output of a parser.
+    let (|>>) p1 f = map f p1
+
+    /// Replaces the expected value of a failure.
+    let (<?>) parser label =
+        let innerFn input =
+            match run parser input with
+            | Success (a, remaining) -> Success(a, remaining)
+            | Failure (position, _, f) -> Failure(position, label, f)
+
+        Parser innerFn
+
+    /// Matches any parser in the list.
+    let any parsers = parsers |> Seq.reduce (<|>)
+
+    /// Matches a list of items in sequence.
+    let sequence parsers =
+        parsers
+        |> Seq.map (map List.singleton)
+        |> Seq.reduce (fun x y -> (x .>>. y) |>> ((<||) List.append))
+
+    /// Matches Some or None.
+    let maybe parser =
+        let innerFn input =
+            match run parser input with
+            | Success (a, remaining) -> Success(Some a, remaining)
+            | Failure _ -> Success(None, input)
+
+        Parser innerFn
+
+    /// Matches zero or more parsers.
+    let many parser =
+        let rec innerFn matched input =
+            match run parser input with
+            | Failure _ -> Success(List.rev matched, input)
+            | Success (a, remaining) -> innerFn (a :: matched) remaining
+
+        Parser(innerFn [])
+
+    /// Matches zero or more parsers until the end of the stream.
+    let untilEnd parser =
+        let rec innerFn matched =
+            function
+            | [] -> Success(List.rev matched, [])
+            | input ->
+                match run parser input with
+                | Failure (p, e, f) -> Failure(p, e, f)
+                | Success (a, remaining) -> innerFn (a :: matched) remaining
+
+        Parser(innerFn [])
+
+    /// Matches exactly n parsers, where n >= 1.
+    let exactly n parser =
+        Seq.init n (fun _ -> parser) |> sequence
+
+    /// Matches n or more, where n >= 1.
+    /// Use 'many' when n = 0.
+    let atleast n parser =
+        exactly n parser .>>. many parser
+        |>> ((<||) List.append)
+
+    /// Matches at least 1 instance of 'parser' separated by 'separator'.
+    let separated separator parser =
+        parser .>>. many (separator >>. parser)
+        |>> function
+        | (a, m) -> a :: m
+
+    /// Converts characters to strings, with special cases
+    /// for invisible chars.
+    let private charToString =
+        function
+        | '\n' -> "'\\n' (a new line)"
+        | '\t' -> "'\\t' (a tab)"
+        | ' ' -> "' ' (a space)"
+        | c -> sprintf "'%c'" c
+
+    /// Matches one character exactly.
+    let pChar a =
+        let innerFn input =
+            match input with
+            | [] -> Failure((0, 0), string a, "EOF")
+            | (head: Char) :: remaining ->
+                if fst head = a then
+                    Success(head, remaining)
+                else
+                    let found = fst head |> charToString
+                    Failure(snd head, charToString a, found)
+
+        Parser innerFn
+
+    /// Matches any character that doesn't appear in the list.
+    let pAnyOtherChar str =
+        let innerFn input =
+            match input with
+            | [] -> Failure((0, 0), sprintf "a character not in %A" str, "EOF")
+            | (head: Char) :: remaining ->
+                if Seq.contains (fst head) str then
+                    let found = fst head |> charToString
+                    Failure(snd head, sprintf "a character not in %A" str, found)
+                else
+                    Success(head, remaining)
+
+        Parser innerFn
+
+    /// Matches any character in the list.
+    let pAnyChar str = str |> Seq.map pChar |> any
+
+    /// Matches a string.
+    let pString (str: string) =
+        str |> Seq.map pChar |> sequence
+        |>> (List.map fst >> System.String.Concat)
+        <?> sprintf "'%s'" str

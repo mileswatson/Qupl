@@ -1,4 +1,4 @@
-open Interpreter.Parsing
+open Interpreter.Syntax
 
 [<EntryPoint>]
 let main argv =
