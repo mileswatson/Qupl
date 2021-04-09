@@ -29,7 +29,7 @@ module Semantics =
         | One -> Ok 1
         | StateExp (Identifier id) ->
             table.TryFind(Identifier id)
-            |> optToResult (sprintf "Identifier '%s' is undefined." id)
+            |> optToResult (sprintf "Identifier '%s' is undefined at this point." id)
             |> Result.bind
                 (function
                 | StaticState x -> Ok x
@@ -47,7 +47,7 @@ module Semantics =
 
     let getGateSize (table: SymbolTable) (Identifier id) =
         table.TryFind(Identifier id)
-        |> optToResult (sprintf "Identifier '%s' is undefined." id)
+        |> optToResult (sprintf "Identifier '%s' is undefined at this point." id)
         |> Result.bind
             (function
             | StaticGate x -> Ok(StaticGate x)
@@ -151,3 +151,9 @@ module Semantics =
                         | Ok definitions -> Ok(definitions.Add head))
 
         innerFn defaultSymbolTable definitions
+        |> Result.bind
+            (fun m ->
+                if m.ContainsKey(Identifier "main") then
+                    Ok m
+                else
+                    Error "Could not find 'main' state definition.")
