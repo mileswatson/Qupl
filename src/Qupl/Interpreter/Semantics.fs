@@ -27,14 +27,14 @@ module Semantics =
         function
         | Zero -> Ok 1
         | One -> Ok 1
-        | StateExp id ->
-            table.TryFind(id)
-            |> optToResult (sprintf "Identifier '%O' is undefined!" id)
+        | StateExp (Identifier id) ->
+            table.TryFind(Identifier id)
+            |> optToResult (sprintf "Identifier '%s' is undefined!" id)
             |> Result.bind
                 (function
                 | StaticState x -> Ok x
                 | _ ->
-                    sprintf "Identifier '%O' is not a statically sized state!" id
+                    sprintf "Identifier '%s' is not a statically sized state!" id
                     |> Error)
 
     let getStatesSizes (table: SymbolTable) states =
@@ -67,46 +67,64 @@ module Semantics =
                 (Ok 0)
             |> Result.map StaticGate
 
-    let verifyFunq (table: SymbolTable) (SequentialGates gates) =
-        let results = List.map (getGatesSize table) gates
-
-        Seq.choose
+    let private firstError results =
+        results
+        |> Seq.choose
             (function
             | Error e -> Some(Error e)
             | Ok _ -> None)
-            results
         |> Seq.tryHead
+
+    let private extractGateSizes results =
+        results
+        |> Seq.choose
+            (function
+            | Error _ -> failwith "Impossible state!"
+            | Ok size ->
+                match size with
+                | StaticGate size -> Some size
+                | _ -> None)
+
+    let verifyFunq (table: SymbolTable) (SequentialGates gates) =
+        let results = List.map (getGatesSize table) gates
+
+        firstError results
         |> Option.defaultWith
             (fun () ->
-                let sizes =
-                    results
-                    |> Seq.choose
-                        (function
-                        | Error _ -> None
-                        | Ok size ->
-                            match size with
-                            | StaticGate size -> Some size
-                            | _ -> None)
+                let sizes = extractGateSizes results
 
                 match Seq.tryHead sizes with
                 | None -> Ok DynamicGate
                 | Some size ->
-                    match Seq.forall ((=) size) sizes with
-                    | false -> Error "Inconsistent sizing!"
-                    | true -> Ok(StaticGate size))
+                    if Seq.forall ((=) size) sizes then
+                        Ok(StaticGate size)
+                    else
+                        sprintf "Expected to find gates of width %i!" size
+                        |> Error)
+
 
     let verifyLet (table: SymbolTable) (ParallelStates states, SequentialGates gates) =
         getStatesSizes table states
-        |> Result.map StaticState
+        |> Result.bind
+            (fun size ->
+                let results = List.map (getGatesSize table) gates
+
+                firstError results
+                |> Option.defaultWith
+                    (fun () ->
+                        let sizes = extractGateSizes results
+
+                        if Seq.forall ((=) size) sizes then
+                            Ok(StaticState size)
+                        else
+                            sprintf "Expected to find gates of width %i!" size
+                            |> Error))
 
     let verifyDefinition (table: SymbolTable) (Identifier identifier) =
         function
         | Let (x, y) -> verifyLet table (x, y)
         | Funq x -> verifyFunq table x
-        >> Result.mapError
-            (fun e ->
-                sprintf "Semantic error in '%s' definition: " identifier
-                + e)
+        >> Result.mapError (fun e -> sprintf "('%s' definition) " identifier + e)
 
     let analyseSemantics definitions =
         let rec innerFn table =
