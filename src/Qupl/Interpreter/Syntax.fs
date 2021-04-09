@@ -58,7 +58,7 @@ module Syntax =
         pAnyChar [ 'a' .. 'z' ]
         <|> pAnyChar [ 'A' .. 'Z' ]
         |> atleast 1
-        |>> (System.String.Concat >> Identifier)
+        |>> (Seq.map fst >> System.String.Concat >> Identifier)
         <?> "an identifier (alphabetic string)"
 
     /// Matches a state expression (0, 1, or an identifer).

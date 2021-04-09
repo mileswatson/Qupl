@@ -1,4 +1,4 @@
-open Interpreter.Syntax
+open Interpreter
 
 [<EntryPoint>]
 let main argv =
@@ -7,7 +7,8 @@ let main argv =
         -1
     else
         System.IO.File.ReadAllText argv.[0]
-        |> generateSyntaxTree
+        |> Syntax.generateSyntaxTree
+        |> Result.bind Semantics.analyseSemantics
         |> function
         | Ok _ -> printfn "Success!"
         | Error msg -> printfn "%s" msg

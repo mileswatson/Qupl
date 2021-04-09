@@ -12,8 +12,9 @@ module Semantics =
     type SymbolTable = Map<Identifier, Signature>
 
     let defaultSymbolTable =
-        [ Identifier "H", StaticGate 1
-          Identifier "CNOT", StaticGate 1
+        [ Identifier "I", StaticGate 1
+          Identifier "H", StaticGate 1
+          Identifier "CNOT", StaticGate 2
           Identifier "log", DynamicGate ]
         |> Map.ofList
 
@@ -44,7 +45,15 @@ module Semantics =
                 |> Result.bind (fun x -> getStateSize table y |> Result.map ((+) x)))
             (Ok 0)
 
-    let getGateSize (table: SymbolTable) (id: Identifier) : Result<int, string> = Error ""
+    let getGateSize (table: SymbolTable) (Identifier id) =
+        table.TryFind(Identifier id)
+        |> optToResult (sprintf "Identifier '%s' is undefined!" id)
+        |> Result.bind
+            (function
+            | StaticGate x -> Ok x
+            | _ ->
+                sprintf "Identifier '%s' is not a statically sized gate!" id
+                |> Error)
 
     let getGatesSize (table: SymbolTable) =
         function
@@ -90,11 +99,14 @@ module Semantics =
         getStatesSizes table states
         |> Result.map StaticState
 
-    let verifyDefinition (table: SymbolTable) (identifier: Identifier) =
+    let verifyDefinition (table: SymbolTable) (Identifier identifier) =
         function
         | Let (x, y) -> verifyLet table (x, y)
         | Funq x -> verifyFunq table x
-        >> Result.mapError (fun e -> sprintf "Definition of '%O': " identifier + e)
+        >> Result.mapError
+            (fun e ->
+                sprintf "Semantic error in '%s' definition: " identifier
+                + e)
 
     let analyseSemantics definitions =
         let rec innerFn table =
