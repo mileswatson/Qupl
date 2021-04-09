@@ -29,12 +29,12 @@ module Semantics =
         | One -> Ok 1
         | StateExp (Identifier id) ->
             table.TryFind(Identifier id)
-            |> optToResult (sprintf "Identifier '%s' is undefined!" id)
+            |> optToResult (sprintf "Identifier '%s' is undefined." id)
             |> Result.bind
                 (function
                 | StaticState x -> Ok x
                 | _ ->
-                    sprintf "Identifier '%s' is not a statically sized state!" id
+                    sprintf "Identifier '%s' is not a statically sized state." id
                     |> Error)
 
     let getStatesSizes (table: SymbolTable) states =
@@ -47,25 +47,37 @@ module Semantics =
 
     let getGateSize (table: SymbolTable) (Identifier id) =
         table.TryFind(Identifier id)
-        |> optToResult (sprintf "Identifier '%s' is undefined!" id)
+        |> optToResult (sprintf "Identifier '%s' is undefined." id)
         |> Result.bind
             (function
-            | StaticGate x -> Ok x
+            | StaticGate x -> Ok(StaticGate x)
+            | DynamicGate -> Ok DynamicGate
             | _ ->
-                sprintf "Identifier '%s' is not a statically sized gate!" id
+                sprintf "Identifier '%s' is not a statically sized gate." id
                 |> Error)
 
     let getGatesSize (table: SymbolTable) =
         function
         | Log -> Ok DynamicGate
         | ParallelGates g ->
-            g
-            |> List.fold
-                (fun (acc: Result<int, string>) y ->
-                    acc
-                    |> Result.bind (fun acc -> getGateSize table y |> Result.map ((+) acc)))
-                (Ok 0)
-            |> Result.map StaticGate
+            match g with
+            | [ y ] -> getGateSize table y
+            | g ->
+                g
+                |> List.fold
+                    (fun (acc: Result<int, string>) y ->
+                        acc
+                        |> Result.bind
+                            (fun acc ->
+                                getGateSize table y
+                                |> Result.bind
+                                    (function
+                                    | StaticGate x -> Ok x
+                                    | DynamicGate -> Error "Dynamically sized gates must appear on their own line."
+                                    | _ -> failwith "Impossible state!")
+                                |> Result.map ((+) acc)))
+                    (Ok 0)
+                |> Result.map StaticGate
 
     let private firstError results =
         results
@@ -99,7 +111,7 @@ module Semantics =
                     if Seq.forall ((=) size) sizes then
                         Ok(StaticGate size)
                     else
-                        sprintf "Expected to find gates of width %i!" size
+                        sprintf "Expected to find gates of width %i." size
                         |> Error)
 
 
@@ -117,7 +129,7 @@ module Semantics =
                         if Seq.forall ((=) size) sizes then
                             Ok(StaticState size)
                         else
-                            sprintf "Expected to find gates of width %i!" size
+                            sprintf "Expected to find gates of width %i." size
                             |> Error))
 
     let verifyDefinition (table: SymbolTable) (Identifier identifier) =
