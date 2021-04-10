@@ -38,11 +38,7 @@ module Runtime =
 
     let rec computeState table (ParallelStates states, SequentialGates gates) =
         states
-        |> List.map
-            (function
-            | Zero -> State.zero
-            | One -> State.one
-            | StateExp id -> getState table id)
+        |> List.map (getState table)
         |> State.entangle
         |> (gates
             |> List.map
@@ -70,6 +66,8 @@ module Runtime =
             |> Map.map (fun _ x -> Computable x)
             |> Dictionary
 
+        d.[Identifier "0"] <- CachedState State.zero
+        d.[Identifier "1"] <- CachedState State.one
         d.[Identifier "I"] <- CachedGate Operator.IDENTITY
         d.[Identifier "H"] <- CachedGate Operator.HADAMARD
         d.[Identifier "CNOT"] <- CachedGate Operator.CNOT

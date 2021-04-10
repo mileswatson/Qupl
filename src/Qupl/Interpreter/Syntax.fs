@@ -6,12 +6,7 @@ module Syntax =
 
     type Identifier = Identifier of string
 
-    type State =
-        | Zero
-        | One
-        | StateExp of Identifier
-
-    type ParallelStates = ParallelStates of State list
+    type ParallelStates = ParallelStates of Identifier list
 
     type ParallelGates =
         | ParallelGates of Identifier list
@@ -57,20 +52,14 @@ module Syntax =
     let identifier =
         pAnyChar [ 'a' .. 'z' ]
         <|> pAnyChar [ 'A' .. 'Z' ]
+        <|> pAnyChar [ '0' .. '9' ]
         |> atleast 1
         |>> (Seq.map fst >> System.String.Concat >> Identifier)
         <?> "an identifier (alphabetic string)"
 
-    /// Matches a state expression (0, 1, or an identifer).
-    let state =
-        (pChar '0' |>> (fun _ -> Zero))
-        <|> (pChar '1' |>> (fun _ -> One))
-        <|> (identifier |>> StateExp)
-        <?> "a state expression (0, 1, or an identifier)"
-
     /// Matches multiple states on the same line, separated by whitespace.
     let parallelStates =
-        state .>>. many (whitespace >>. state)
+        identifier .>>. many (whitespace >>. identifier)
         |>> function
         | (a, m) -> a :: m
         |>> ParallelStates

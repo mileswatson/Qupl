@@ -12,7 +12,9 @@ module Semantics =
     type SymbolTable = Map<Identifier, Signature>
 
     let defaultSymbolTable =
-        [ Identifier "I", StaticGate 1
+        [ Identifier "0", StaticState 1
+          Identifier "1", StaticState 1
+          Identifier "I", StaticGate 1
           Identifier "H", StaticGate 1
           Identifier "CNOT", StaticGate 2
           Identifier "log", DynamicGate ]
@@ -23,19 +25,15 @@ module Semantics =
         | Some x -> Ok x
         | None -> Error err
 
-    let getStateSize (table: SymbolTable) =
-        function
-        | Zero -> Ok 1
-        | One -> Ok 1
-        | StateExp (Identifier id) ->
-            table.TryFind(Identifier id)
-            |> optToResult (sprintf "Identifier '%s' is undefined at this point." id)
-            |> Result.bind
-                (function
-                | StaticState x -> Ok x
-                | _ ->
-                    sprintf "Identifier '%s' is not a statically sized state." id
-                    |> Error)
+    let getStateSize (table: SymbolTable) (Identifier id) =
+        table.TryFind(Identifier id)
+        |> optToResult (sprintf "Identifier '%s' is undefined at this point." id)
+        |> Result.bind
+            (function
+            | StaticState x -> Ok x
+            | _ ->
+                sprintf "Identifier '%s' is not a statically sized state." id
+                |> Error)
 
     let getStatesSizes (table: SymbolTable) states =
         states
