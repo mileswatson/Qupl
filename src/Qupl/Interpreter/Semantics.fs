@@ -58,7 +58,7 @@ module Semantics =
 
     let getGatesSize (table: SymbolTable) =
         function
-        | Log -> Ok DynamicGate
+        | Log _ -> Ok DynamicGate
         | ParallelGates g ->
             match g with
             | [ y ] -> getGateSize table y

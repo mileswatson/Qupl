@@ -15,7 +15,7 @@ module Syntax =
 
     type ParallelGates =
         | ParallelGates of Identifier list
-        | Log
+        | Log of string
 
     type SequentialGates = SequentialGates of ParallelGates list
 
@@ -76,9 +76,19 @@ module Syntax =
         |>> ParallelStates
         <?> "at least one state expression (separated by whitespace)"
 
+    let logExpression =
+        (pString "log"
+         >>. maybe whitespace
+         >>. pChar '\"'
+         >>. many (pAnyOtherChar "\n\"")
+         .>> pChar '\"'
+         |>> (List.map fst >> System.String.Concat))
+        <|> pString "log"
+        |>> Log
+
     /// Matches multiple gates on the same line, separated by whitespace.
     let parallelGates =
-        (pString "log" |>> (fun _ -> Log))
+        logExpression
         <|> (identifier .>>. many (whitespace >>. identifier)
              |>> function
              | (a, m) -> a :: m

@@ -18,7 +18,7 @@ module Runtime =
         gates
         |> List.choose
             (function
-            | Log -> None
+            | Log _ -> None
             | ParallelGates x -> Some x)
         |> List.map (List.map (getGate table))
         |> Operator.chainAll
@@ -32,8 +32,8 @@ module Runtime =
             gate
         | _ -> failwithf "%O is not a state" id
 
-    let logState states =
-        Core.tostring states |> printfn "%s\n"
+    let logState msg states =
+        Core.tostring states |> printfn "%s\n%s\n" msg
         states
 
     let rec computeState table (ParallelStates states, SequentialGates gates) =
@@ -47,7 +47,7 @@ module Runtime =
         |> (gates
             |> List.map
                 (function
-                | Log -> logState
+                | Log msg -> logState msg
                 | ParallelGates g ->
                     g
                     |> List.map (getGate table)
