@@ -16,7 +16,7 @@
   <PropertyGroup>
     <PackOnBuild>true</PackOnBuild>
     <PackageId>Qupl</PackageId>
-    <Version>0.0.2</Version>
+    <Version>0.0.3</Version>
     <Product>Qupl</Product>
     <Authors>Miles Watson</Authors>
     <PackageIcon>icon.png</PackageIcon>
