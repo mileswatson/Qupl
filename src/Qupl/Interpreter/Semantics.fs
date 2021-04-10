@@ -139,16 +139,24 @@ module Semantics =
         >> Result.mapError (fun e -> sprintf "('%s' definition) " identifier + e)
 
     let analyseSemantics definitions =
-        let rec innerFn table =
+        let rec innerFn (table: SymbolTable) =
             function
             | [] -> Ok Map.empty
             | head :: tail ->
-                verifyDefinition table (fst head) (snd head)
-                |> Result.bind
-                    (fun signature ->
-                        match innerFn (table.Add(fst head, signature)) tail with
-                        | Error e -> Error e
-                        | Ok definitions -> Ok(definitions.Add head))
+                let name = fst head
+
+                if table.ContainsKey name then
+                    let (Identifier s) = name
+
+                    sprintf "('%s' definition) '%s' has already been defined." s s
+                    |> Error
+                else
+                    verifyDefinition table name (snd head)
+                    |> Result.bind
+                        (fun signature ->
+                            match innerFn (table.Add(name, signature)) tail with
+                            | Error e -> Error e
+                            | Ok definitions -> Ok(definitions.Add head))
 
         innerFn defaultSymbolTable definitions
         |> Result.bind
