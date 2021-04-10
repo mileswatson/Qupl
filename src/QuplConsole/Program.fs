@@ -9,8 +9,9 @@ let main argv =
         System.IO.File.ReadAllText argv.[0]
         |> Syntax.generateSyntaxTree
         |> Result.bind Semantics.analyseSemantics
+        |> Result.map Runtime.run
         |> function
-        | Ok _ -> printfn "Success!"
+        | Ok s -> printfn "%s" s
         | Error msg -> printfn "%s" msg
 
         0

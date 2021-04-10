@@ -1,5 +1,7 @@
 namespace Interpreter
 
+open Parsing
+
 module Syntax =
 
     type Identifier = Identifier of string
@@ -20,8 +22,6 @@ module Syntax =
     type Definition =
         | Let of ParallelStates * SequentialGates
         | Funq of SequentialGates
-
-    open Parsing
 
     /// Removes characters that increase complexity of parsing.
     let removeCarriageReturns (code: string) = code.Replace("\r", "")

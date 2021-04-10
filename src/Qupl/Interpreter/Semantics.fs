@@ -1,8 +1,8 @@
 namespace Interpreter
 
-module Semantics =
+open Syntax
 
-    open Syntax
+module Semantics =
 
     type Signature =
         | StaticState of int
@@ -153,7 +153,9 @@ module Semantics =
         innerFn defaultSymbolTable definitions
         |> Result.bind
             (fun m ->
-                if m.ContainsKey(Identifier "main") then
-                    Ok m
-                else
-                    Error "Could not find 'main' state definition.")
+                match Map.tryFind (Identifier "main") m with
+                | None -> Error "Could not find 'main' state definition."
+                | Some s ->
+                    match s with
+                    | Funq _ -> Error "'main' is a gate, not a state."
+                    | Let _ -> Ok m)

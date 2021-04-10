@@ -11,6 +11,7 @@
     <Compile Include="Interpreter/Parsing.fs" />
     <Compile Include="Interpreter/Syntax.fs" />
     <Compile Include="Interpreter/Semantics.fs" />
+    <Compile Include="Interpreter/Runtime.fs" />
   </ItemGroup>
   <PropertyGroup>
     <PackOnBuild>true</PackOnBuild>
