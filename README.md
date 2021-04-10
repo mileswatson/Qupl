@@ -53,12 +53,12 @@ funq blackbox =
 // A let definition is starting state, which can
 // be followed by a sequence of parallel gates.
 let deutsch =
-    0 1         // These are the initial starting states
+    0 1             // These are the initial starting states
     H H
 
-    log         // You can debug intermediate states in a 'let' expression
+    log "before"    // You can debug intermediate states in a 'let' expression
     blackbox
-    log
+    log "after"
 
     H H
 
