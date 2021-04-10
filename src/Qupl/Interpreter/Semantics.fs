@@ -103,15 +103,17 @@ module Semantics =
             (fun () ->
                 let sizes = extractGateSizes results
 
-                match Seq.tryHead sizes with
-                | None -> Ok DynamicGate
-                | Some size ->
-                    if Seq.forall ((=) size) sizes then
-                        Ok(StaticGate size)
-                    else
-                        sprintf "Expected to find gates of width %i." size
-                        |> Error)
-
+                if Seq.length sizes <> Seq.length results then
+                    Error "Cannot use 'log' in a 'funq' expression."
+                else
+                    match Seq.tryHead sizes with
+                    | None -> Ok DynamicGate
+                    | Some size ->
+                        if Seq.forall ((=) size) sizes then
+                            Ok(StaticGate size)
+                        else
+                            sprintf "Expected to find gates of width %i." size
+                            |> Error)
 
     let verifyLet (table: SymbolTable) (ParallelStates states, SequentialGates gates) =
         getStatesSizes table states

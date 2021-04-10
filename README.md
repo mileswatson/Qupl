@@ -56,7 +56,7 @@ let deutsch =
     0 1         // These are the initial starting states
     H H
 
-    log         // You can debug intermediate states
+    log         // You can debug intermediate states in a 'let' expression
     blackbox
     log
 
