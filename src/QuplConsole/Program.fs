@@ -11,7 +11,7 @@ let main argv =
         |> Result.bind Semantics.analyseSemantics
         |> Result.map Runtime.run
         |> function
-        | Ok s -> printfn "%s" s
+        | Ok s -> printfn "%A" s
         | Error msg -> printfn "%s" msg
 
         0

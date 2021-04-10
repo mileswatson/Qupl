@@ -35,6 +35,11 @@ module State =
 
     let debug = pown 2 >> Matrix.identity >> State
 
+    let probabilities =
+        toMatrix
+        >> (fun x -> x.[0.., 0])
+        >> Array.map Complex.probability
+
     let zero =
         array2D [ [ Complex.one ]
                   [ Complex.zero ] ]

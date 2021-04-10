@@ -79,4 +79,4 @@ module Runtime =
     let run input =
         input |> prepareRuntable |> getState
         <| (Identifier "main")
-        |> Core.tostring
+        |> State.probabilities
